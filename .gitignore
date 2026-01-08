@@ -1,0 +1,8 @@
+
+.venv/
+.idea/
+__pycache__/
+
+other stuff/
+
+my_current_inputdata.csv
