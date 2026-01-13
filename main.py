@@ -26,35 +26,29 @@ import upload_to_datalumos
 #########################################################
 
 # TODO: VARIABLES TO SET:
-start_row = 12 # WITHOUT COUNTING THE COLUMNS ROW!  (and beginning at 1)
-end_row = 12 # (to process only one row, set start_row and end_row to the same number)
 
 csv_file_path = "my_current_inputdata.csv"  # or the complete path, for example: "/home/YNodd/PycharmProjects/datalumos/my_current_inputdata.csv"
 folder_path_uploadfiles = "/media/YNodd/32 GB/data rescue project/"  # the folder where the upload files are (there, the subfolders for the single data projects are located)
 # example: the files are on a USB flash drive, in a folder named "data rescue project", the example path would be: /media/YNodd/32 GB/data rescue project/
 #   in there is the folder "national-transit-map-stops" which contains the zip-files and metadata.xml for uploading
 
+start_row = 8 # WITHOUT COUNTING THE COLUMNS ROW!  (and beginning at 1)
+end_row = 9 # (to process only one row, set start_row and end_row to the same number)
+
 do_nominate_to_EOT = False # False or True
 do_upload_to_datalumos = True # False if it shouldn't be uploaded automatically (or can't be because the script gets blocked from the website)
 
-url_datalumos = "https://www.datalumos.org/datalumos/workspace"
-
 #########################################################
 
+url_datalumos = "https://www.datalumos.org/datalumos/workspace"
 
 #all_copypaste_rows = []  # todo for later
 
 # todo: (maybe print out, which tasks were selected for execution)
 
 # prepare the webdrivers for datalumos-upload or EOT-nominating:
-if do_upload_to_datalumos == True:
+if do_upload_to_datalumos == True or do_nominate_to_EOT == True:
     browserdriver = webdriver.Firefox() # firefox must be installed on the computer, or the code should be changed for another browser
-    browserdriver.get(url_datalumos) # start the browser window
-    print("\nLog in now (manually) in the browser\n")
-    print("If you upload from USB device: MAKE SURE THE USB IS PLUGGED IN!\n")
-    sleep(1)
-if do_nominate_to_EOT == True:
-    browserdriver2 = webdriver.Firefox()
 
 
 # loop through the individual rows to process the data:
@@ -69,7 +63,7 @@ for current_row in range(start_row, end_row + 1):
     # nominate, if required:
     if do_nominate_to_EOT == True:
         try:
-            nominate.nominate_to_EOT_USGWDA(current_row_data["7_original_distribution_url"], browserdriver2)
+            nominate.nominate_to_EOT_USGWDA(current_row_data["7_original_distribution_url"], browserdriver)
         except:
             print_red("\nSomething went wrong while trying to nominate the url!\n")
             #print(traceback.format_exc())
@@ -81,19 +75,19 @@ for current_row in range(start_row, end_row + 1):
             filepaths_to_upload = get_paths_uploadfiles(folder_path_uploadfiles, current_row_data["path"])
             #print("filepaths_to_upload:", filepaths_to_upload)
         except FileNotFoundError:
-            print_red("File not found. Are you sure your USB is plugged in and the path correct?")
+            print_red("\nFile not found. Are you sure your USB is plugged in and the path correct?")
     else:
         print_red("You probably forgot to insert a filepath in the csv file.")
 
     # get the size and the file extensions of the data that should be uploaded:
     if filepaths_to_upload != None and len(filepaths_to_upload) != 0:
         datasize, filextensions = size_and_extensions.get_datasize_and_extensions(filepaths_to_upload)
-        #print(f"size and file extensions: {datasize}\t{filextensions}\n")
+        #print(f"size and file extensions: {datasize}\t{filextensions}")
 
     # fill in the forms on DataLumos and upload the data:
     if do_upload_to_datalumos == True:
         print(f"\nFiles that will be uploaded: {filepaths_to_upload}\n")
-        upload_to_datalumos.upload_csv_to_datalumos(current_row_data, browserdriver, filepaths_to_upload)
+        upload_to_datalumos.upload_csv_to_datalumos(current_row_data, browserdriver, filepaths_to_upload, url_datalumos)
 
     #all_copypaste_rows.append(single_copypaste_row)  # todo for later
 

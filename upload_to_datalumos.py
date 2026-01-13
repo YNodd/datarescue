@@ -15,12 +15,13 @@ import traceback
 from time import sleep
 
 # own modules:
-from helper_functions import print_red
+from helper_functions import print_orange
 import drag_and_drop_file
 
 
 
 waiting_print_was_last = False  # helper variable to ensure the waiting-for-overlay info is just printed once, then represented with dots
+datalumos_intro_already_shown = False  # helper variable to print the introduction only one time (at the first iteration)
 
 
 def print_normal(printtext):
@@ -45,6 +46,7 @@ def wait_for_obscuring_elements_in_datalumos(current_driver_obj):
 
     overlays = current_driver_obj.find_elements(By.ID, "busy")  # caution: find_elements, not find_element
     if len(overlays) != 0:  # there is an overlay
+        # The first time the  waiting information is printed out, then it's just printed as dots, until a "normal print" comes in between.
         if waiting_print_was_last == False:
             #print(f"... (Waiting for overlay to disappear. Overlay(s): {overlays})")
             print(f"(Waiting for overlay to disappear): .", end = "")
@@ -57,7 +59,17 @@ def wait_for_obscuring_elements_in_datalumos(current_driver_obj):
             sleep(0.5)
 
 
-def upload_csv_to_datalumos(datadict, mydriver, list_of_filepaths):
+def upload_csv_to_datalumos(datadict, mydriver, list_of_filepaths, workspace_url):
+
+    global datalumos_intro_already_shown
+
+    mydriver.get(workspace_url) # start the browser window
+    if datalumos_intro_already_shown == False:
+        print_orange("\nLog in now (manually) in the browser\n")
+        print_orange("If you upload from USB device: MAKE SURE THE USB IS PLUGGED IN!\n")
+        datalumos_intro_already_shown = True
+    sleep(1)
+
     new_project_btn = WebDriverWait(mydriver, 360).until(EC.presence_of_element_located((By.CSS_SELECTOR, ".btn > span:nth-child(3)"))) # .btn > span:nth-child(3)
     #print("button found")
     wait_for_obscuring_elements_in_datalumos(mydriver)
@@ -121,6 +133,14 @@ def upload_csv_to_datalumos(datadict, mydriver, list_of_filepaths):
             # submit: <button type="button" class="btn btn-primary save-org" data-reactid=".2.0.0.1.1.1.0.0.0.1.0.0.1.0.0">Save &amp; Apply</button>
             #   .save-org
             wait_for_obscuring_elements_in_datalumos(mydriver)
+
+            # bits of code taken from mkraley:
+            # Wait a moment for the dropdown to appear
+            sleep(0.5)
+            # Click on the Organization Name label to dismiss the dropdown
+            org_label = mydriver.find_element(By.CSS_SELECTOR, "label[for='orgName']")  # (would be better with WebDriverWait() ?)
+            org_label.click()
+
             submit_agency_btn = WebDriverWait(mydriver, 100).until(EC.element_to_be_clickable((By.CSS_SELECTOR, ".save-org")))
             submit_agency_btn.click()
 
@@ -144,7 +164,7 @@ def upload_csv_to_datalumos(datadict, mydriver, list_of_filepaths):
         #   .glyphicon-ok
         save_summary_btn = WebDriverWait(mydriver, 100).until(EC.element_to_be_clickable((By.CSS_SELECTOR, ".glyphicon-ok")))
     else:
-        print_red("The summary is mandatory for the DataLumos project! Please fill it in manually.")
+        print_red_with_waiting("The summary is mandatory for the DataLumos project! Please fill it in manually.")
 
 
     # --- Original Distribution url
@@ -195,7 +215,7 @@ def upload_csv_to_datalumos(datadict, mydriver, list_of_filepaths):
             wait_for_obscuring_elements_in_datalumos(mydriver)
             keyword_sugg.click()
         except:
-            print_red("\nThere was a problem with the keywords! Please check if one ore more are missing in the form and fill them in manually.\n Problem:")
+            print_red_with_waiting("\nThere was a problem with the keywords! Please check if one ore more are missing in the form and fill them in manually.\n Problem:")
             print_normal(traceback.format_exc())
 
 
