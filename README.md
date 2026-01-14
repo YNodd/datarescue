@@ -21,7 +21,7 @@ Set the variables on top of the main.py file (see below for further information)
 - **folder_path_uploadfiles**: the folder where the upload files are (there, the subfolders for the single data projects are located)<br>
 Example: the files are on a USB flash drive, in a folder named "data rescue project", the example path would be: /media/YNodd/32 GB/data rescue project/<br>
 In there is the folder "national-transit-map-stops" which contains the zip-files and metadata.xml for uploading.
-- **browser_type**: "firefox" or "chrome". I initially wrote this code for Firefox, but Chrome seems to handle the Cloudflare verification better; it rarely runs into a blocking loop).
+- **browser_type**: "firefox" or "chrome". (I initially wrote this code for Firefox, but Chrome seems to handle the Cloudflare verification better; it rarely runs into a blocking loop).
 - **start_row**: the number of the start row (without counting the columns), begins counting at 1 (not zero)
 - **end_row**: the number of the end row. To process only one row, set start_row and end_row to the same number.
 - **do_nominate_to_EOT**: if the URLs should be nominated to EOT/USGWDA
@@ -49,11 +49,15 @@ You can process more than one data project at once with the csv file; the script
 
 
 
-# Benefits
+# Benefits and drawbacks
+benefits:
 - the use of the script speeds up "manual" data rescuing and allows batch processing. When the csv file is prepared, putting data and metadata to DataLumos basically does the work by itself; it's easier to fill in the data in a spreadsheet than in the forms of DataLumos (for example the keywords). Additionally you simply can copy-paste the details that stay the same. And when the site is loading slow, you don't need to wait for every single input to be processed while you stare at the "busy" icon ;)
 - the code or parts of it can be used for automation, to speed up data rescue tasks.<br>
 A csv file in the needed format (as shown in the template) can be created manually. Or you can write your own code to produce the csv automatically, for example while scraping the datasets from the websites.
 
+drawbacks:
+- there is no error handling, which is no problem when using the script as intended, because nothing is published automatically - the project can be checked and altered before publishing manually. But take this into consideration when using it as a basis for your own automation code (once published to DataLumos, a project can't be deleted anymore).
+- Note: it seems best to not do batches with more than 10 projects, because of how the DataLumos page behaves.
 
 
 # Installation
