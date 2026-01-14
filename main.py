@@ -16,6 +16,11 @@ from selenium import webdriver
 from time import sleep
 #import traceback
 
+# for chrome:
+from selenium.webdriver.chrome.options import Options as ChromeOptions
+#from selenium.webdriver.chrome.service import Service as ChromeService
+#from webdriver_manager.chrome import ChromeDriverManager
+
 # import own modules (the corresponding files have to be saved in the same directory):
 import size_and_extensions
 import nominate
@@ -31,6 +36,7 @@ csv_file_path = "my_current_inputdata.csv"  # or the complete path, for example:
 folder_path_uploadfiles = "/media/YNodd/32 GB/data rescue project/"  # the folder where the upload files are (there, the subfolders for the single data projects are located)
 # example: the files are on a USB flash drive, in a folder named "data rescue project", the example path would be: /media/YNodd/32 GB/data rescue project/
 #   in there is the folder "national-transit-map-stops" which contains the zip-files and metadata.xml for uploading
+browsertype = "firefox"  # "firefox" or "chrome"
 
 start_row = 8 # WITHOUT COUNTING THE COLUMNS ROW!  (and beginning at 1)
 end_row = 9 # (to process only one row, set start_row and end_row to the same number)
@@ -44,11 +50,34 @@ url_datalumos = "https://www.datalumos.org/datalumos/workspace"
 
 #all_copypaste_rows = []  # todo for later
 
+
 # todo: (maybe print out, which tasks were selected for execution)
+
+print_orange("\nIf you upload or work from USB device: MAKE SURE THE USB IS PLUGGED IN!")
 
 # prepare the webdrivers for datalumos-upload or EOT-nominating:
 if do_upload_to_datalumos == True or do_nominate_to_EOT == True:
-    browserdriver = webdriver.Firefox() # firefox must be installed on the computer, or the code should be changed for another browser
+    if browsertype.lower() == "firefox":
+        browserdriver = webdriver.Firefox()
+
+    elif browsertype.lower() == "chrome":
+
+        # code from mkraley:
+        # Set up Chrome options
+        chrome_options = ChromeOptions()
+        # Uncomment the line below to run in headless mode (no visible browser window)
+        # chrome_options.add_argument("--headless")
+        chrome_options.add_argument("--disable-blink-features=AutomationControlled")
+        chrome_options.add_experimental_option("excludeSwitches", ["enable-automation"])
+        chrome_options.add_experimental_option('useAutomationExtension', False)
+        # Initialize Chrome driver using webdriver-manager to automatically handle ChromeDriver
+        #service = ChromeService(ChromeDriverManager().install())
+        #browserdriver = webdriver.Chrome(service=service, options=chrome_options)
+        browserdriver = webdriver.Chrome(options=chrome_options)
+        #print(f"✓ Initialized Chrome browser")
+
+    else:
+        print_red("You didn't specify correct browser information. The browser variable has to be set either to firefox or to chrome.")
 
 
 # loop through the individual rows to process the data:
@@ -56,7 +85,7 @@ for current_row in range(start_row, end_row + 1):
     #single_copypaste_row = {} # todo for later
     current_row_data = read_csv_line(csv_file_path, current_row)
     #print(datadict)
-    print("\n----------------------------")
+    print("\n\n----------------------------")
     print(f"Processing row {current_row}, Title: {current_row_data['4_title']}")
     print("----------------------------")
 
@@ -82,11 +111,11 @@ for current_row in range(start_row, end_row + 1):
     # get the size and the file extensions of the data that should be uploaded:
     if filepaths_to_upload != None and len(filepaths_to_upload) != 0:
         datasize, filextensions = size_and_extensions.get_datasize_and_extensions(filepaths_to_upload)
-        #print(f"size and file extensions: {datasize}\t{filextensions}")
+        print(f"size and file extensions: {datasize}\t{filextensions}")
 
     # fill in the forms on DataLumos and upload the data:
     if do_upload_to_datalumos == True:
-        print(f"\nFiles that will be uploaded: {filepaths_to_upload}\n")
+        print(f"\nFiles that will be uploaded: {filepaths_to_upload}")
         upload_to_datalumos.upload_csv_to_datalumos(current_row_data, browserdriver, filepaths_to_upload, url_datalumos)
 
     #all_copypaste_rows.append(single_copypaste_row)  # todo for later

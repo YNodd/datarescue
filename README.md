@@ -21,6 +21,7 @@ Set the variables on top of the main.py file (see below for further information)
 - **folder_path_uploadfiles**: the folder where the upload files are (there, the subfolders for the single data projects are located)<br>
 Example: the files are on a USB flash drive, in a folder named "data rescue project", the example path would be: /media/YNodd/32 GB/data rescue project/<br>
 In there is the folder "national-transit-map-stops" which contains the zip-files and metadata.xml for uploading.
+- **browser_type**: "firefox" or "chrome". I initially wrote this code for Firefox, but Chrome seems to handle the Cloudflare verification better; it rarely runs into a blocking loop).
 - **start_row**: the number of the start row (without counting the columns), begins counting at 1 (not zero)
 - **end_row**: the number of the end row. To process only one row, set start_row and end_row to the same number.
 - **do_nominate_to_EOT**: if the URLs should be nominated to EOT/USGWDA
@@ -57,7 +58,7 @@ A csv file in the needed format (as shown in the template) can be created manual
 
 # Installation
 
-[Firefox][] is a requirement.
+[Firefox][] is a requirement. (Chrome works now too.)
 
 Selenium does the heavy lifting for the script. But before installing that, you may
 want to create a virtual environment.

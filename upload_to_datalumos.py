@@ -11,6 +11,7 @@ There is no error handling. But the browser remains open even if the script cras
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.by import By
+from selenium.webdriver.common.keys import Keys
 import traceback
 from time import sleep
 
@@ -49,7 +50,7 @@ def wait_for_obscuring_elements_in_datalumos(current_driver_obj):
         # The first time the  waiting information is printed out, then it's just printed as dots, until a "normal print" comes in between.
         if waiting_print_was_last == False:
             #print(f"... (Waiting for overlay to disappear. Overlay(s): {overlays})")
-            print(f"(Waiting for overlay to disappear): .", end = "")
+            print(f"\n(Waiting for overlay to disappear): .", end = "")
             waiting_print_was_last = True
         else:
             print(".", end = "")
@@ -62,11 +63,13 @@ def wait_for_obscuring_elements_in_datalumos(current_driver_obj):
 def upload_csv_to_datalumos(datadict, mydriver, list_of_filepaths, workspace_url):
 
     global datalumos_intro_already_shown
+    global waiting_print_was_last
+
+    waiting_print_was_last = False # reset the variable for every new call/projet row
 
     mydriver.get(workspace_url) # start the browser window
     if datalumos_intro_already_shown == False:
         print_orange("\nLog in now (manually) in the browser\n")
-        print_orange("If you upload from USB device: MAKE SURE THE USB IS PLUGGED IN!\n")
         datalumos_intro_already_shown = True
     sleep(1)
 
@@ -157,9 +160,30 @@ def upload_csv_to_datalumos(datadict, mydriver, list_of_filepaths, workspace_url
         edit_summary.click()
         # summary form: <body contenteditable="true" class="editable-wysihtml5 wysihtml5-editor" spellcheck="true" style="background-color: rgb(255, 255, 255); color: rgb(51, 51, 51); cursor: text; font-family: &quot;Atkinson Hyperlegible&quot;, sans-serif; font-size: 16px; font-style: normal; font-variant: normal; font-weight: 400; line-height: 20px; letter-spacing: normal; text-align: start; text-decoration: rgb(51, 51, 51); text-indent: 0px; text-rendering: optimizelegibility; word-break: normal; overflow-wrap: break-word; word-spacing: 0px;"><span id="_wysihtml5-undo" class="_wysihtml5-temp">﻿</span></body>
         #   css-sel.: body
+
+        # code from mkraley (without this, there seem to be issues if used with Chrome instead of Firefox):
+        # summary form: The WYSIWYG editor is inside an iframe with class "wysihtml5-sandbox"
+        #   First, find and switch to the iframe
+        wysihtml5_iframe = WebDriverWait(mydriver, 100).until(EC.presence_of_element_located((By.CSS_SELECTOR, "iframe.wysihtml5-sandbox")))
+        mydriver.switch_to.frame(wysihtml5_iframe)
+        # Now find the body element inside the iframe
         summary_form = WebDriverWait(mydriver, 100).until(EC.presence_of_element_located((By.CSS_SELECTOR, "body")))
+        # Click to focus the contenteditable element
+        summary_form.click()
+        sleep(0.3)
+        # Clear any existing content
+        summary_form.send_keys(Keys.CONTROL + "a")
+        sleep(0.2)
+        # Use JavaScript to set the text content (more reliable for contenteditable elements)
+        # Use the fixed summary text
+        mydriver.execute_script("arguments[0].textContent = arguments[1];", summary_form, summarytext)
+        # Trigger input event to ensure the editor recognizes the change
+        mydriver.execute_script("arguments[0].dispatchEvent(new Event('input', { bubbles: true }));", summary_form)
+        sleep(0.3)
+        # Switch back to default content before clicking save button (which is outside iframe)
+        mydriver.switch_to.default_content()
         wait_for_obscuring_elements_in_datalumos(mydriver)
-        summary_form.send_keys(datadict["6_summary_description"])
+
         # save: <i class="glyphicon glyphicon-ok"></i>
         #   .glyphicon-ok
         save_summary_btn = WebDriverWait(mydriver, 100).until(EC.element_to_be_clickable((By.CSS_SELECTOR, ".glyphicon-ok")))
@@ -199,7 +223,7 @@ def upload_csv_to_datalumos(datadict, mydriver, list_of_filepaths, workspace_url
             more_keywords = single_keywordcell.replace("'", "").replace("[", "").replace("]", "").replace('"', '')  # remove quotes and brackets
             more_keywordslist = more_keywords.split(",")
             keywords_to_insert += more_keywordslist
-    print_normal(f"\nkeywords_to_insert: {keywords_to_insert}\n")
+    print_normal(f"\nkeywords_to_insert: {keywords_to_insert}")
     for single_keyword in keywords_to_insert:
         keyword = single_keyword.strip(" '")
         try:
@@ -297,9 +321,29 @@ def upload_csv_to_datalumos(datadict, mydriver, list_of_filepaths, workspace_url
         wait_for_obscuring_elements_in_datalumos(mydriver)
         coll_notes_edit_btn.click()
         # css-sel: body
+
+        # code from mkraley (without this, there seem to be issues if used with Chrome instead of Firefox), same problem as further above with the summary form:
+        # The WYSIWYG editor is inside an iframe with class "wysihtml5-sandbox"
+        #   First, find and switch to the iframe
+        wysihtml5_iframe = WebDriverWait(mydriver, 50).until(EC.presence_of_element_located((By.CSS_SELECTOR, "iframe.wysihtml5-sandbox")))
+        mydriver.switch_to.frame(wysihtml5_iframe)
+        # Now find the body element inside the iframe
         coll_notes_form = WebDriverWait(mydriver, 50).until(EC.presence_of_element_located((By.CSS_SELECTOR, "body")))
+        # Click to focus the contenteditable element
+        coll_notes_form.click()
+        sleep(0.3)
+        # Clear any existing content
+        coll_notes_form.send_keys(Keys.CONTROL + "a")
+        sleep(0.2)
+        # Use JavaScript to set the text content (more reliable for contenteditable elements)
+        mydriver.execute_script("arguments[0].textContent = arguments[1];", coll_notes_form, text_for_collectionnotes)
+        # Trigger input event to ensure the editor recognizes the change
+        mydriver.execute_script("arguments[0].dispatchEvent(new Event('input', { bubbles: true }));", coll_notes_form)
+        sleep(0.3)
+        # Switch back to default content before clicking save button (which is outside iframe)
+        mydriver.switch_to.default_content()
         wait_for_obscuring_elements_in_datalumos(mydriver)
-        coll_notes_form.send_keys(text_for_collectionnotes)
+
         # css-sel: .editable-submit
         coll_notes_save_btn = WebDriverWait(mydriver, 50).until(EC.element_to_be_clickable((By.CSS_SELECTOR, ".editable-submit")))
         coll_notes_save_btn.click()
