@@ -329,6 +329,7 @@ def upload_csv_to_datalumos(datadict, mydriver, list_of_filepaths, workspace_url
         mydriver.switch_to.frame(wysihtml5_iframe)
         # Now find the body element inside the iframe
         coll_notes_form = WebDriverWait(mydriver, 50).until(EC.presence_of_element_located((By.CSS_SELECTOR, "body")))
+        wait_for_obscuring_elements_in_datalumos(mydriver)
         # Click to focus the contenteditable element
         coll_notes_form.click()
         sleep(0.3)
@@ -349,6 +350,44 @@ def upload_csv_to_datalumos(datadict, mydriver, list_of_filepaths, workspace_url
         coll_notes_save_btn.click()
 
 
+    # --- Related Publications (DOI)
+    publications_to_add = datadict.get("related_resources")
+    if publications_to_add != None:  # ensure the column name exists in the csv file
+        if len(publications_to_add) != 0 and publications_to_add != " ":
+            for singlepub in publications_to_add.split(", "):
+                #print_normal(f"singlepub: {singlepub}")
+                # div.panel:nth-child(4) > div:nth-child(1) > h3:nth-child(1) > a:nth-child(2) > span:nth-child(2)
+                wait_for_obscuring_elements_in_datalumos(mydriver)
+                add_citation_btn = WebDriverWait(mydriver, 50).until(EC.element_to_be_clickable((By.CSS_SELECTOR, "div.panel:nth-child(4) > div:nth-child(1) > h3:nth-child(1) > a:nth-child(2) > span:nth-child(2)")))
+                add_citation_btn.click()
+                #<button type="button" class="btn btn-primary" data-reactid=".5.0.0.1.1.0.0">Import Via DOI</button>
+                # #citationModalWrapper > div:nth-child(1) > div:nth-child(1) > div:nth-child(2) > div:nth-child(2) > div:nth-child(1) > button:nth-child(1)
+                wait_for_obscuring_elements_in_datalumos(mydriver)
+                import_via_doi_btn = WebDriverWait(mydriver, 50).until(EC.element_to_be_clickable((By.CSS_SELECTOR, "#citationModalWrapper > div:nth-child(1) > div:nth-child(1) > div:nth-child(2) > div:nth-child(2) > div:nth-child(1) > button:nth-child(1)")))
+                import_via_doi_btn.click()
+                # <input type="text" name="doi" class="input-sm form-control" id="doi" placeholder="10.3886/ScienceVol12Issue13Smith" value="" data-reactid=".5.0.0.1.1.2.0.1.0">
+                # #doi
+                wait_for_obscuring_elements_in_datalumos(mydriver)
+                doi_form = WebDriverWait(mydriver, 50).until(EC.presence_of_element_located((By.CSS_SELECTOR, "#doi")))
+                doi_form.send_keys(singlepub)
+                # <span data-reactid=".2.0.0.1.1.2.0.2.0.1"> import</span>
+                doi_import_btn = WebDriverWait(mydriver, 50).until(EC.element_to_be_clickable((By.XPATH, "//span[text()=' import']")))
+                doi_import_btn.click()
+                #print_normal("doi_import_btn clicked")
+                # CSS-selector: #relationship
+                relationship_scrollbar = WebDriverWait(mydriver, 50).until(EC.element_to_be_clickable((By.CSS_SELECTOR, "#relationship")))
+                relationship_scrollbar.click()
+                # search in the scrollbar for the text "relates in an unspecified way to":
+                scrollbar_text = WebDriverWait(mydriver, 50).until(EC.element_to_be_clickable((By.XPATH, "//*[contains(text(), 'relates in an unspecified way to')]")))
+                #print_normal("scrollbar_text found")
+                scrollbar_text.click()
+                # button.pull-right
+                save_doi_btn = WebDriverWait(mydriver, 50).until(EC.element_to_be_clickable((By.CSS_SELECTOR, "button.pull-right")))
+                #print_normal("save_doi_btn found")
+                save_doi_btn.click()
+
+
+
     # --- Upload files
 
     if len(datadict["path"]) != 0 and datadict["path"] != " ":
@@ -360,19 +399,25 @@ def upload_csv_to_datalumos(datadict, mydriver, list_of_filepaths, workspace_url
         wait_for_obscuring_elements_in_datalumos(mydriver)
         fileupload_field = WebDriverWait(mydriver, 50).until(EC.presence_of_element_located((By.CSS_SELECTOR, ".col-md-offset-2 > span:nth-child(1)")))
 
-        for singlefile in list_of_filepaths:
-            drag_and_drop_file.drag_and_drop_file(fileupload_field, singlefile)
+        # upload in a try-except-block to ensure that the script continues to fill in the DataLumos forms etc, even if the files can't be uploaded
+        try:
+            for singlefile in list_of_filepaths:
+                drag_and_drop_file.drag_and_drop_file(fileupload_field, singlefile)
 
-        # when a file is uploaded and its progress bar is complete, a text appears: "File added to queue for upload."
-        #   To check that the files are completely uploaded, this text has to be there as often as the number of files:
-        filecount = len(list_of_filepaths)
-        #print("filecount:", filecount)
-        #sleep(10)
-        test2 = mydriver.find_elements(By.XPATH, "//span[text()='File added to queue for upload.']")
-        # wait until the text has appeared as often as there are files:
-        #   (to wait longer for uploads to be completed, change the number in WebDriverWait(mydriver, ...) - it is the waiting time in seconds)
-        WebDriverWait(mydriver, 2000).until(lambda x: True if len(mydriver.find_elements(By.XPATH, "//span[text()='File added to queue for upload.']")) == filecount else False)
-        print_normal("\nAll files should be uploaded completely now.\n")
+             # when a file is uploaded and its progress bar is complete, a text appears: "File added to queue for upload."
+            #   To check that the files are completely uploaded, this text has to be there as often as the number of files:
+            filecount = len(list_of_filepaths)
+            #print("filecount:", filecount)
+            #sleep(10)
+            test2 = mydriver.find_elements(By.XPATH, "//span[text()='File added to queue for upload.']")
+            # wait until the text has appeared as often as there are files:
+            #   (to wait longer for uploads to be completed, change the number in WebDriverWait(mydriver, ...) - it is the waiting time in seconds)
+            WebDriverWait(mydriver, 2000).until(lambda x: True if len(mydriver.find_elements(By.XPATH, "//span[text()='File added to queue for upload.']")) == filecount else False)
+            print_normal("\nAll files should be uploaded completely now.\n")
+
+        except Exception as e:
+            print_red_with_waiting("\n\nNot possible to upload files:")
+            print_red_with_waiting(e)
 
 
         # close-btn: .importFileModal > div:nth-child(3) > button:nth-child(1)
