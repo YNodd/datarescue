@@ -36,7 +36,7 @@ csv_file_path = "my_current_inputdata.csv"  # or the complete path, for example:
 folder_path_uploadfiles = "/media/YNodd/32 GB/data rescue project/"  # the folder where the upload files are (there, the subfolders for the single data projects are located)
 # example: the files are on a USB flash drive, in a folder named "data rescue project", the example path would be: /media/YNodd/32 GB/data rescue project/
 #   in there is the folder "national-transit-map-stops" which contains the zip-files and metadata.xml for uploading
-browsertype = "firefox"  # "firefox" or "chrome"
+browsertype = "chrome"  # "firefox" or "chrome"
 
 start_row = 8 # WITHOUT COUNTING THE COLUMNS ROW!  (and beginning at 1)
 end_row = 9 # (to process only one row, set start_row and end_row to the same number)
