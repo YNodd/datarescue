@@ -32,6 +32,7 @@ In there is the folder `national-transit-map-stops` which contains the zip-files
 Other columns can be added (but will be ignored by the code), and the order of the columns doesn't matter (they can be arranged as you work best).
 - The "path" column is the folder name for the folder where the data files are located, and can be in this format: .\epa-facilities, but can also be written without .\ at the beginning. It also doesn't matter if the path is in linux or windows format, both / and \ can be used. 
 - the keywords have to be separated by commas in the spreadsheet cell. They can be written with quotation marks or not, and they can optionally be between square brackets.
+- the cells in the column "related_resources" have to be the DOI's of the related resources. Multiple entries have to be separated by a comma and a space (example: 10.3133/sir20185001, 10.3133/sir20125088)
 
 (the numbers in the column names have no special meaning; they are only a historic leftover)
 
