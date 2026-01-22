@@ -2,6 +2,7 @@
 .venv/
 .idea/
 __pycache__/
+.envrc
 
 other stuff/
 
