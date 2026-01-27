@@ -24,6 +24,7 @@ In there is the folder `national-transit-map-stops` which contains the zip-files
 - **end_row**: the number of the end row. To process only one row, set start_row and end_row to the same number.
 - **do_nominate_to_EOT**: if the URLs should be nominated to EOT/USGWDA
 - **do_upload_to_datalumos**: if the data should be uploaded to DataLumos (fill in the forms, upload the files)
+- **datalumos_upload_mode**: "normal" or "zip". Importing from zip is very useful if the project folder contains subfolders; the whole project folder can be manually compressed into one zip file that will be unpacked by DataLumos after/while uploading, so that the folder structure will be kept (with "normal" upload, it is only possible to upload single files). Please note: to work correctly, the project folder and its zip file need to have the same name as the project title in the csv file. The zip file has to be located inside the project folder.
 
 ## about the template spreadsheet:
 
@@ -88,7 +89,7 @@ pip3 install -r requirements.txt
 [Chrome]: https://www.getchrome.com/
 [direnv]: https://direnv.net/
 
-## Troubleshooting
+# Troubleshooting
 
 If the script hangs, it could be because Cloudflare has a new CAPTCHA in place. Workarounds:
 
@@ -99,7 +100,7 @@ If the script hangs, it could be because Cloudflare has a new CAPTCHA in place. 
    https://whatismyip.com/ works well for this. It will take the DataLumos a 
    couple of days.
 
-## Contributors
+# Contributors
 
 - [mkraley](https://github.com/mkraley)
 - [sefk](https://github.com/sefk)

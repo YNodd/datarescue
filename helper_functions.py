@@ -17,7 +17,6 @@ def print_orange(printtext, colourcode = 208):
 def get_paths_uploadfiles(folderpath, projectfolder):
     # Builds a list with all the single file paths to be uploaded. Takes as argument the path to the parent folder,
     #   where all the data folders are located (for example, the path to the external USB drive).
-    # todo: maybe include also subfolders?
     mypath = projectfolder
     if mypath[0:2] == ".\\" or mypath[0:2] == "./":
         # eliminate the first two characters, the dot and the slash:
@@ -31,11 +30,20 @@ def get_paths_uploadfiles(folderpath, projectfolder):
         folderpath = folderpath.replace("\\", "/")
     combinedpath = os.path.join(folderpath, mypath)
     #print("combinedpath:", combinedpath)
-    uploadfiles_names = os.listdir(combinedpath)
-    # build the complete paths for the files that should be uploaded, by joining the single parts of the path:
-    uploadfiles_paths = [os.path.join(combinedpath, filename) for filename in uploadfiles_names]
-    # ensure that no paths of directories are taken for upload, if they're in the same folder (only keep the paths of the files):
-    uploadfiles_paths = [filepath for filepath in uploadfiles_paths if os.path.isfile(filepath)]
+    uploadfiles_paths = []
+    subfolder_list = []  # list for the subfolder names, if there are any
+    for foldername, subfolders, filenames in os.walk(combinedpath):
+        #print('current folder is ' + foldername)
+        for subfolder in subfolders:
+            subfolder_list.append(subfolder)
+        for filename in filenames:
+            # build the paths for the files that should be uploaded, by joining the single parts of the path:
+            uploadfiles_paths.append(os.path.join(foldername, filename))
+            #if not os.path.exists(os.path.join(foldername, filename)):
+                #print_red("DOESNT EXIST")
+    if len(subfolder_list) > 0:
+        print_orange(f"There are subfolders in the project folder. If the upload-modus for Datalumos isn't 'zip', the files "
+                     f"will be uploaded, but not organized into the subfolder structure! Also size and extensions will be false!")  # \n\tThe subfolder names are: {subfolder_list}
     return uploadfiles_paths
 
 
@@ -48,3 +56,9 @@ def read_csv_line(csv_file, line_to_process):
                 return singlerow  # is already a dictionary
 
 
+
+
+if __name__ == "__main__":
+    testpaths = get_paths_uploadfiles("/media/YNodd/D-LIVE 12_2/sciencebase_downloads_3/", "FiCli Fish and Climate Change Database (ver. 3.0, October 2024)/")
+    for singletestp in testpaths:
+        print(singletestp)

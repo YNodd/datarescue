@@ -15,6 +15,7 @@ There is no error handling (But the browser remains open even if the script cras
 from selenium import webdriver
 from time import sleep
 #import traceback
+import os
 
 # for chrome:
 from selenium.webdriver.chrome.options import Options as ChromeOptions
@@ -43,6 +44,8 @@ end_row = 9 # (to process only one row, set start_row and end_row to the same nu
 
 do_nominate_to_EOT = False # False or True
 do_upload_to_datalumos = True # False if it shouldn't be uploaded automatically (or can't be because the script gets blocked from the website)
+datalumos_upload_mode = "normal"  # "normal" for simply uploading files, or "zip" to use the import-from-zip upload (which unpacks files and folders after uploading)
+#   Caution: to use the zip upload mode, the title of the project and the name of its folder and the name of the zip file have to be the same!
 
 #########################################################
 
@@ -52,6 +55,7 @@ url_datalumos = "https://www.datalumos.org/datalumos/workspace"
 
 
 # todo: (maybe print out, which tasks were selected for execution)
+# todo: (maybe check the variables that have to be set be the user right away at the start)
 
 print_orange("\nIf you upload or work from USB device: MAKE SURE THE USB IS PLUGGED IN!")
 
@@ -97,26 +101,54 @@ for current_row in range(start_row, end_row + 1):
             print_red("\nSomething went wrong while trying to nominate the url!\n")
             #print(traceback.format_exc())
 
-    # get the paths of the files that should be uploaded
-    filepaths_to_upload = None
+    # get the paths of all the files that are in the project folder
+    filepaths = None
     if len(current_row_data["path"]) >= 2:
-        try:
-            filepaths_to_upload = get_paths_uploadfiles(folder_path_uploadfiles, current_row_data["path"])
-            #print("filepaths_to_upload:", filepaths_to_upload)
-        except FileNotFoundError:
-            print_red("\nFile not found. Are you sure your USB is plugged in and the path correct?\nThe code will continue, but no files will be uploaded or processed otherwise!")
+        filepaths = get_paths_uploadfiles(folder_path_uploadfiles, current_row_data["path"])
+        #print("filepaths_:", filepaths)
+        if len(filepaths) == 0:
+            print_red("There are no file paths found! Are you sure your USB is plugged in and the path correct?\nThe code "
+                      "will continue, but no files will be uploaded or processed otherwise!")
     else:
         print_red("You probably forgot to insert a filepath in the csv file.")
 
+
+    if datalumos_upload_mode == "zip":
+        # separate the zip file from the filepaths of the files in the project folder (to ensure for example that the
+        #  size and extensions aren't taken from the zipped content too):
+        #  the name of the zip file has to be the same as the title and the name of the project folder!
+
+        zipfile_name = current_row_data['4_title'] + ".zip"  # get the path of the zip file
+        #print(f"\nzipfile_name: {zipfile_name}")
+        operatingsystem = os.name
+        slash_char = "/" if operatingsystem == "posix" else "\\"  # assign the right kind of slash depending on the OS
+        zipfile_path = folder_path_uploadfiles + current_row_data['4_title'] + slash_char + zipfile_name
+        #print(f"zipfile_path: {zipfile_path}")
+        if not os.path.exists(zipfile_path) and len(filepaths) != 0:
+            print_red("The corresponding zip file wasn't found! Maybe the name of the file isn't identical to the project title and folder name?")
+        else:
+            #print("zipfile_path in filepaths:", zipfile_path in filepaths)
+            try:
+                filepaths.remove(zipfile_path)
+            except ValueError:
+                print_red("zipfile_path wasn't found in the list")
+        # todo for later: maybe it would be better to automate the upload_mode selection (check if there are subfolders
+        #  in the project folder, zip the content and choose zip as upload-mode) to avoid user error. Or maybe only use
+        #  zip mode right away for all uploads and remove the "normal" parts from the script?
+
     # get the size and the file extensions of the data that should be uploaded:
-    if filepaths_to_upload != None and len(filepaths_to_upload) != 0:
-        datasize, filextensions = size_and_extensions.get_datasize_and_extensions(filepaths_to_upload)
+    if filepaths != None and len(filepaths) != 0:
+        datasize, filextensions = size_and_extensions.get_datasize_and_extensions(filepaths)
         print(f"size and file extensions: {datasize}\t{filextensions}")
 
     # fill in the forms on DataLumos and upload the data:
     if do_upload_to_datalumos == True:
-        print(f"\nFiles that will be uploaded: {filepaths_to_upload}")
-        upload_to_datalumos.upload_csv_to_datalumos(current_row_data, browserdriver, filepaths_to_upload, url_datalumos)
+        # if upload mode is "zip", only the file with the zipped project content is given to the upload function, otherwise
+        #   the complete list of the files in the project folder (except this zipped content, which was removed from filepaths further above)
+        upload_input = [zipfile_path] if datalumos_upload_mode == "zip" else filepaths
+        #print(f"\nFile(s) that will be uploaded: {upload_input}")
+        upload_to_datalumos.upload_csv_to_datalumos(current_row_data, browserdriver, upload_input, url_datalumos, datalumos_upload_mode)
+
 
     #all_copypaste_rows.append(single_copypaste_row)  # todo for later
 

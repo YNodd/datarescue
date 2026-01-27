@@ -60,12 +60,12 @@ def wait_for_obscuring_elements_in_datalumos(current_driver_obj):
             sleep(0.5)
 
 
-def upload_csv_to_datalumos(datadict, mydriver, list_of_filepaths, workspace_url):
+def upload_csv_to_datalumos(datadict, mydriver, list_of_filepaths, workspace_url, uploadmode):
 
     global datalumos_intro_already_shown
     global waiting_print_was_last
 
-    waiting_print_was_last = False # reset the variable for every new call/projet row
+    waiting_print_was_last = False # reset the variable for every new call/project row
 
     mydriver.get(workspace_url) # start the browser window
     if datalumos_intro_already_shown == False:
@@ -188,7 +188,7 @@ def upload_csv_to_datalumos(datadict, mydriver, list_of_filepaths, workspace_url
         #   .glyphicon-ok
         save_summary_btn = WebDriverWait(mydriver, 100).until(EC.element_to_be_clickable((By.CSS_SELECTOR, ".glyphicon-ok")))
     else:
-        print_red_with_waiting("The summary is mandatory for the DataLumos project! Please fill it in manually.")
+        print_red_with_waiting("\nThe summary is mandatory for the DataLumos project! Please fill it in manually.")
 
 
     # --- Original Distribution url
@@ -313,7 +313,7 @@ def upload_csv_to_datalumos(datadict, mydriver, list_of_filepaths, workspace_url
 
     if len(datadict["12_collection_notes"]) != 0 or len(datadict["12_download_date_original_source"]) != 0:
         # check if there is data in the date field (otherwise set it to empty string):
-        downloaddate = f"(Downloaded {datadict['12_download_date_original_source']})" if len(datadict["12_download_date_original_source"]) != 0 else ""
+        downloaddate = f"(Downloaded {datadict['12_download_date_original_source']})" if len(datadict["12_download_date_original_source"]) > 2 else ""
         # the text for collection notes is the note and the download date, if the note cell in the csv file isn't empty (otherwise it's only the date):
         text_for_collectionnotes = datadict["12_collection_notes"] + " " + downloaddate if len(datadict["12_collection_notes"]) != 0 and datadict["12_collection_notes"] != " " else downloaddate
         # css-sel.: #edit-imeta_collectionNotes_0 > span:nth-child(2)
@@ -328,8 +328,8 @@ def upload_csv_to_datalumos(datadict, mydriver, list_of_filepaths, workspace_url
         wysihtml5_iframe = WebDriverWait(mydriver, 50).until(EC.presence_of_element_located((By.CSS_SELECTOR, "iframe.wysihtml5-sandbox")))
         mydriver.switch_to.frame(wysihtml5_iframe)
         # Now find the body element inside the iframe
-        coll_notes_form = WebDriverWait(mydriver, 50).until(EC.presence_of_element_located((By.CSS_SELECTOR, "body")))
         wait_for_obscuring_elements_in_datalumos(mydriver)
+        coll_notes_form = WebDriverWait(mydriver, 50).until(EC.presence_of_element_located((By.CSS_SELECTOR, "body")))
         # Click to focus the contenteditable element
         coll_notes_form.click()
         sleep(0.3)
@@ -354,6 +354,7 @@ def upload_csv_to_datalumos(datadict, mydriver, list_of_filepaths, workspace_url
     publications_to_add = datadict.get("related_resources")
     if publications_to_add != None:  # ensure the column name exists in the csv file
         if len(publications_to_add) != 0 and publications_to_add != " ":
+            print_normal(f"\npublications_to_add: {publications_to_add}")
             for singlepub in publications_to_add.split(", "):
                 #print_normal(f"singlepub: {singlepub}")
                 # div.panel:nth-child(4) > div:nth-child(1) > h3:nth-child(1) > a:nth-child(2) > span:nth-child(2)
@@ -391,36 +392,89 @@ def upload_csv_to_datalumos(datadict, mydriver, list_of_filepaths, workspace_url
     # --- Upload files
 
     if len(datadict["path"]) != 0 and datadict["path"] != " ":
-        # upload-button: <span data-reactid=".0.3.1.1.0.0.0.0.0.0.1.2.3">Upload Files</span>
-        #   a.btn-primary:nth-child(3) > span:nth-child(4)
-        wait_for_obscuring_elements_in_datalumos(mydriver)
-        upload_btn = WebDriverWait(mydriver, 50).until(EC.element_to_be_clickable((By.CSS_SELECTOR, "a.btn-primary:nth-child(3) > span:nth-child(4)")))
-        upload_btn.click()
-        wait_for_obscuring_elements_in_datalumos(mydriver)
-        fileupload_field = WebDriverWait(mydriver, 50).until(EC.presence_of_element_located((By.CSS_SELECTOR, ".col-md-offset-2 > span:nth-child(1)")))
+        if uploadmode.lower() == "normal":
+            # upload-button: <span data-reactid=".0.3.1.1.0.0.0.0.0.0.1.2.3">Upload Files</span>
+            #   a.btn-primary:nth-child(3) > span:nth-child(4)
+            wait_for_obscuring_elements_in_datalumos(mydriver)
+            upload_btn = WebDriverWait(mydriver, 50).until(EC.element_to_be_clickable((By.CSS_SELECTOR, "a.btn-primary:nth-child(3) > span:nth-child(4)")))
+            upload_btn.click()
+            wait_for_obscuring_elements_in_datalumos(mydriver)
+            fileupload_field = WebDriverWait(mydriver, 50).until(EC.presence_of_element_located((By.CSS_SELECTOR, ".col-md-offset-2 > span:nth-child(1)")))
 
-        # upload in a try-except-block to ensure that the script continues to fill in the DataLumos forms etc, even if the files can't be uploaded
-        try:
-            for singlefile in list_of_filepaths:
-                drag_and_drop_file.drag_and_drop_file(fileupload_field, singlefile)
+            print(f"\nFiles that will be uploaded: {list_of_filepaths}")
+            # upload in a try-except-block to ensure that the script continues to fill in the DataLumos forms etc, even if the files can't be uploaded
+            try:
+                for singlefile in list_of_filepaths:
+                    drag_and_drop_file.drag_and_drop_file(fileupload_field, singlefile)
 
-             # when a file is uploaded and its progress bar is complete, a text appears: "File added to queue for upload."
-            #   To check that the files are completely uploaded, this text has to be there as often as the number of files:
-            filecount = len(list_of_filepaths)
-            #print("filecount:", filecount)
-            #sleep(10)
-            test2 = mydriver.find_elements(By.XPATH, "//span[text()='File added to queue for upload.']")
-            # wait until the text has appeared as often as there are files:
-            #   (to wait longer for uploads to be completed, change the number in WebDriverWait(mydriver, ...) - it is the waiting time in seconds)
-            WebDriverWait(mydriver, 2000).until(lambda x: True if len(mydriver.find_elements(By.XPATH, "//span[text()='File added to queue for upload.']")) == filecount else False)
-            print_normal("\nAll files should be uploaded completely now.\n")
+                 # when a file is uploaded and its progress bar is complete, a text appears: "File added to queue for upload."
+                #   To check that the files are completely uploaded, this text has to be there as often as the number of files:
+                filecount = len(list_of_filepaths)
+                #print("filecount:", filecount)
+                #sleep(10)
+                # wait until the text has appeared as often as there are files:
+                #   (to wait longer for uploads to be completed, change the number in WebDriverWait(mydriver, ...) - it is the waiting time in seconds)
+                WebDriverWait(mydriver, 2000).until(lambda x: True if len(mydriver.find_elements(By.XPATH, "//span[text()='File added to queue for upload.']")) == filecount else False)
+                print_normal("\nAll files should be uploaded completely now.\n")
 
-        except Exception as e:
-            print_red_with_waiting("\n\nNot possible to upload files:")
-            print_red_with_waiting(e)
+            except Exception as e:
+                print_red_with_waiting("\n\nNot possible to upload files:")
+                print_red_with_waiting(e)
+
+            # close-btn: .importFileModal > div:nth-child(3) > button:nth-child(1)
+            wait_for_obscuring_elements_in_datalumos(mydriver)
+            close_btn = WebDriverWait(mydriver, 50).until(EC.element_to_be_clickable((By.CSS_SELECTOR, ".importFileModal > div:nth-child(3) > button:nth-child(1)")))
+            close_btn.click()
+
+        elif uploadmode.lower() == "zip":
+            # <span data-reactid=".0.3.1.1.0.0.0.0.0.0.1.4.3">Import From Zip</span>
+            # a.btn-default:nth-child(5) > span:nth-child(4)
+            wait_for_obscuring_elements_in_datalumos(mydriver)
+            zipupload_btn = WebDriverWait(mydriver, 50).until(EC.element_to_be_clickable((By.CSS_SELECTOR, "a.btn-default:nth-child(5) > span:nth-child(4)")))
+            zipupload_btn.click()
+            wait_for_obscuring_elements_in_datalumos(mydriver)
+            fileupload_field = WebDriverWait(mydriver, 50).until(EC.presence_of_element_located((By.CSS_SELECTOR, ".col-md-offset-2 > span:nth-child(1)")))
+            print_normal(f"\nzip file that will be uploaded: {list_of_filepaths}")
+            # upload in a try-except-block to ensure that the script continues to fill in the DataLumos forms etc, even if the files can't be uploaded:
+            try:
+                for singlefile in list_of_filepaths:
+                    drag_and_drop_file.drag_and_drop_file(fileupload_field, singlefile)
+                    # <span data-reactid=".3.0.0.0.0.1.0.8.0.2">Upload</span>
+                    # #uploadButton > span:nth-child(3)
+                    # the upload button has to be clicked (it doesn't start by itself after drag-and-drop like for the normal upload)
+                    start_upload_btn = WebDriverWait(mydriver, 50).until(EC.presence_of_element_located((By.CSS_SELECTOR, "#uploadButton > span:nth-child(3)")))
+                    start_upload_btn.click()
+                    # text that appears after uploading the zip file: "The contents of your ZIP file are being extracted
+                    #   and processed and may take several minutes (or longer) to complete. After you finish importing ZIP
+                    #   files, click the "Close" button to return to the deposit workspace. To check on the status of your
+                    #   ZIP imports, refresh your workspace."
+                    WebDriverWait(mydriver, 2000).until(EC.presence_of_element_located((By.XPATH, "//*[contains(text(), 'The contents of your ZIP file are being extracted and processed')]")))
+                    # the close button is different from the one for the normal uploads!:
+                    close_btn = WebDriverWait(mydriver, 50).until(EC.element_to_be_clickable((By.CSS_SELECTOR, ".importZipModal > div:nth-child(3) > button:nth-child(1)")))
+                    close_btn.click()
+                    # text that appears in the DataLumos workspace after uploading the zip file: "Import From Zip is in
+                    #   progress. You cannot upload or manipulate files during the import. The progress is shown below."
+                    # loop as long as the processing info text reappears after reloading the workspace:
+                    zip_in_progess_element = ["Placeholder"]
+                    while len(zip_in_progess_element) > 0:
+                        wait_for_obscuring_elements_in_datalumos(mydriver)
+                        sleep(1)  # better use WebDriverWait with low timeout?
+                        zip_in_progess_element = mydriver.find_elements(By.XPATH, "//*[contains(text(), 'Import From Zip is in progress')]")
+                        if len(zip_in_progess_element) != 0:  # to not print the empty list if the progress info disappears
+                            print_normal(f"zip_in_progess_element found, waiting")
+                        # refresh the workspace:
+                        # <i class="glyphicon glyphicon-refresh" data-reactid=".0.3.1.1.0.0.0.0.0.0.0.1.1"></i>
+                        # .glyphicon-refresh
+                        refresh_button = WebDriverWait(mydriver, 50).until(EC.element_to_be_clickable((By.CSS_SELECTOR, ".glyphicon-refresh")))
+                        #print_normal("refresh_button found")
+                        refresh_button.click()
+                    print_normal("\nzip-upload should be completed")
+
+            except Exception as e:
+                print_red_with_waiting("\n\nNot possible to upload the zip file:")
+                print_red_with_waiting(e)
+
+        else:
+            print_red_with_waiting("You didn't specify correct upload mode. The variable datalumos_upload_mode has to be set either to normal or to zip.")
 
 
-        # close-btn: .importFileModal > div:nth-child(3) > button:nth-child(1)
-        wait_for_obscuring_elements_in_datalumos(mydriver)
-        close_btn = WebDriverWait(mydriver, 50).until(EC.element_to_be_clickable((By.CSS_SELECTOR, ".importFileModal > div:nth-child(3) > button:nth-child(1)")))
-        close_btn.click()
