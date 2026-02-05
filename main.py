@@ -13,14 +13,14 @@ There is no error handling (But the browser remains open even if the script cras
 
 
 from selenium import webdriver
+# for chrome:
+from selenium.webdriver.chrome.options import Options as ChromeOptions
+from selenium.webdriver.chrome.service import Service as ChromeService
+#from webdriver_manager.chrome import ChromeDriverManager
 from time import sleep
 #import traceback
 import os
 
-# for chrome:
-from selenium.webdriver.chrome.options import Options as ChromeOptions
-#from selenium.webdriver.chrome.service import Service as ChromeService
-#from webdriver_manager.chrome import ChromeDriverManager
 
 # import own modules (the corresponding files have to be saved in the same directory):
 import size_and_extensions
@@ -50,6 +50,7 @@ datalumos_upload_mode = "normal"  # "normal" for simply uploading files, or "zip
 #########################################################
 
 url_datalumos = "https://www.datalumos.org/datalumos/workspace"
+url_USGWDA = "https://digital2.library.unt.edu/nomination/GWDA-US-2025/"
 
 #all_copypaste_rows = []  # todo for later
 
@@ -78,7 +79,7 @@ if do_upload_to_datalumos == True or do_nominate_to_EOT == True:
         #service = ChromeService(ChromeDriverManager().install())
         #browserdriver = webdriver.Chrome(service=service, options=chrome_options)
         browserdriver = webdriver.Chrome(options=chrome_options)
-        #print(f"✓ Initialized Chrome browser")
+        browserdriver.set_window_size(width = 1200, height = 750)
 
     else:
         print_red("You didn't specify correct browser information. The browser variable has to be set either to firefox or to chrome.")
@@ -96,7 +97,7 @@ for current_row in range(start_row, end_row + 1):
     # nominate, if required:
     if do_nominate_to_EOT == True:
         try:
-            nominate.nominate_to_EOT_USGWDA(current_row_data["7_original_distribution_url"], browserdriver)
+            nominate.nominate_to_EOT_USGWDA(current_row_data["7_original_distribution_url"], browserdriver, url_USGWDA)
         except:
             print_red("\nSomething went wrong while trying to nominate the url!\n")
             #print(traceback.format_exc())

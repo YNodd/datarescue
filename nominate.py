@@ -8,10 +8,10 @@ from selenium.common.exceptions import NoSuchElementException
 
 from helper_functions import print_red  # own module
 
-def nominate_to_EOT_USGWDA(url_to_nominate, browser_driver):
+def nominate_to_EOT_USGWDA(url_to_nominate, browser_driver, site_url):
     # Checks if the given url is already nominated to EOT/USGWDA, otherwise nominates it.
     # Returns False if anything went wrong, True if the url is (or was already) nominated
-    browser_driver.get("https://digital2.library.unt.edu/nomination/GWDA-US-2025/") # start the browser window
+    browser_driver.get(site_url) # start the browser window
     sleep(0.5)
     # <input type="text" class="form-control" name="search-url-value" id="search-url-value" aria-describedby="help-block">
     search_form = WebDriverWait(browser_driver, 30).until(EC.presence_of_element_located((By.ID, "search-url-value")))
