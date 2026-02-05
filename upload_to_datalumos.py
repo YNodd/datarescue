@@ -161,7 +161,7 @@ def upload_csv_to_datalumos(datadict, mydriver, list_of_filepaths, workspace_url
         # summary form: <body contenteditable="true" class="editable-wysihtml5 wysihtml5-editor" spellcheck="true" style="background-color: rgb(255, 255, 255); color: rgb(51, 51, 51); cursor: text; font-family: &quot;Atkinson Hyperlegible&quot;, sans-serif; font-size: 16px; font-style: normal; font-variant: normal; font-weight: 400; line-height: 20px; letter-spacing: normal; text-align: start; text-decoration: rgb(51, 51, 51); text-indent: 0px; text-rendering: optimizelegibility; word-break: normal; overflow-wrap: break-word; word-spacing: 0px;"><span id="_wysihtml5-undo" class="_wysihtml5-temp">﻿</span></body>
         #   css-sel.: body
 
-        # code from mkraley (without this, there seem to be issues if used with Chrome instead of Firefox):
+        # code mainly from mkraley (without this, there seem to be issues if used with Chrome instead of Firefox):
         # summary form: The WYSIWYG editor is inside an iframe with class "wysihtml5-sandbox"
         #   First, find and switch to the iframe
         wysihtml5_iframe = WebDriverWait(mydriver, 100).until(EC.presence_of_element_located((By.CSS_SELECTOR, "iframe.wysihtml5-sandbox")))
@@ -175,8 +175,8 @@ def upload_csv_to_datalumos(datadict, mydriver, list_of_filepaths, workspace_url
         summary_form.send_keys(Keys.CONTROL + "a")
         sleep(0.2)
         # Use JavaScript to set the text content (more reliable for contenteditable elements)
-        # Use the fixed summary text
-        mydriver.execute_script("arguments[0].textContent = arguments[1];", summary_form, summarytext)
+        adapted_summarytext = summarytext.replace('\n', Keys.RETURN)  # to ensure that the different paragraphs are kept and not reduced to one line
+        mydriver.execute_script("arguments[0].textContent = arguments[1];", summary_form, adapted_summarytext)
         # Trigger input event to ensure the editor recognizes the change
         mydriver.execute_script("arguments[0].dispatchEvent(new Event('input', { bubbles: true }));", summary_form)
         sleep(0.3)
